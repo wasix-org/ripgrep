@@ -1,0 +1,21 @@
+[package]
+name = "wasmer/ripgrep"
+version = "15.2.0"
+description = "ripgrep compiled to WASIX"
+license = "Unlicense OR MIT"
+readme = "WASIX.md"
+repository = "https://github.com/wasix-org/ripgrep"
+entrypoint = "rg"
+
+[fs]
+"/usr/share/licenses/ripgrep" = ".wasix/licenses"
+
+[[module]]
+name = "rg"
+source = ".wasix/dist/rg.wasm"
+abi = "wasi"
+
+[[command]]
+name = "rg"
+module = "rg"
+runner = "wasi"

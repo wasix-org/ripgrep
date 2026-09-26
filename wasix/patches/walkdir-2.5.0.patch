@@ -1,0 +1,35 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -103,6 +103,7 @@
+ [`filter_entry`]: struct.IntoIter.html#method.filter_entry
+ */
+ 
++#![cfg_attr(target_os = "wasi", feature(wasi_ext))]
+ #![deny(missing_docs)]
+ #![allow(unknown_lints)]
+ 
+--- a/src/util.rs
++++ b/src/util.rs
+@@ -1,9 +1,12 @@
+ use std::io;
+ use std::path::Path;
+ 
+-#[cfg(unix)]
++#[cfg(any(unix, target_os = "wasi"))]
+ pub fn device_num<P: AsRef<Path>>(path: P) -> io::Result<u64> {
++    #[cfg(unix)]
+     use std::os::unix::fs::MetadataExt;
++    #[cfg(target_os = "wasi")]
++    use std::os::wasi::fs::MetadataExt;
+ 
+     path.as_ref().metadata().map(|md| md.dev())
+ }
+@@ -16,7 +19,7 @@
+     file::information(h).map(|info| info.volume_serial_number())
+ }
+ 
+-#[cfg(not(any(unix, windows)))]
++#[cfg(not(any(unix, windows, target_os = "wasi")))]
+ pub fn device_num<P: AsRef<Path>>(_: P) -> io::Result<u64> {
+     Err(io::Error::new(
+         io::ErrorKind::Other,

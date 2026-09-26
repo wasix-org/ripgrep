@@ -1,0 +1,52 @@
+name: WASIX
+on:
+  push:
+    branches: [codex/wasix]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wasix-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install pinned build tools
+        run: |
+          cargo install cargo-wasix --version 0.1.33 --locked
+          cargo wasix download-toolchain v2026-07-07.3+rust-1.96
+          # This pinned archive omits executable bits on the native linker shims.
+          chmod +x "$(rustc +wasix --print sysroot)"/lib/rustlib/*-unknown-linux-gnu/bin/gcc-ld/*
+          curl -fL https://github.com/wasmerio/wasmer/releases/download/v7.4.2/wasmer-linux-amd64.tar.gz -o /tmp/wasmer.tar.gz
+          echo '07271f7ecf449135bbd44cfe9f38a65e54ab25f1564a9c6bd2d0d5cca5743963  /tmp/wasmer.tar.gz' | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/wasmer"
+          tar -xzf /tmp/wasmer.tar.gz -C "$RUNNER_TEMP/wasmer"
+          echo "$RUNNER_TEMP/wasmer/bin" >> "$GITHUB_PATH"
+          curl -fL https://github.com/bytecodealliance/wasm-tools/releases/download/v1.251.0/wasm-tools-1.251.0-x86_64-linux.tar.gz -o /tmp/wasm-tools.tar.gz
+          echo '08d523676ec71d9afbae05aa4255041ce91bf2d325d87b7e722d190d558be689  /tmp/wasm-tools.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/wasm-tools.tar.gz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/wasm-tools-1.251.0-x86_64-linux" >> "$GITHUB_PATH"
+      - name: Build and test package
+        run: |
+          bash wasix/build.sh
+          python3 wasix/test.py
+      - name: Rebuild from scratch and compare bytes
+        run: |
+          cp .wasix/dist/rg.wasm .wasix/first.wasm
+          cp .wasix/ripgrep-15.2.0.webc .wasix/first.webc
+          CARGO_TARGET_DIR=.wasix/repro-target bash wasix/build.sh
+          cmp .wasix/first.wasm .wasix/dist/rg.wasm
+          cmp .wasix/first.webc .wasix/ripgrep-15.2.0.webc
+          sha256sum .wasix/dist/rg.wasm .wasix/ripgrep-15.2.0.webc > .wasix/SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ripgrep-wasix-15.2.0
+          include-hidden-files: true
+          path: |
+            .wasix/dist/rg.wasm
+            .wasix/ripgrep-15.2.0.webc
+            .wasix/SHA256SUMS
+            .wasix/provenance.json

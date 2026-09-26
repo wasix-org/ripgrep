@@ -370,9 +370,30 @@ impl DirEntryRaw {
         })
     }
 
+    // WASIX supplies directory entries through std::fs without Unix extensions.
+    #[cfg(target_os = "wasi")]
+    fn from_entry_os(
+        depth: usize,
+        ent: &fs::DirEntry,
+        ty: fs::FileType,
+    ) -> Result<DirEntryRaw, Error> {
+        Ok(DirEntryRaw { path: ent.path(), ty, follow_link: false, depth })
+    }
+
+    #[cfg(target_os = "wasi")]
+    fn from_path(
+        depth: usize,
+        pb: PathBuf,
+        link: bool,
+    ) -> Result<DirEntryRaw, Error> {
+        let md = fs::metadata(&pb)
+            .map_err(|err| Error::Io(err).with_depth(depth).with_path(&pb))?;
+        Ok(DirEntryRaw { path: pb, ty: md.file_type(), follow_link: link, depth })
+    }
+
     // Placeholder implementation to allow compiling on non-standard platforms
     // (e.g. wasm32).
-    #[cfg(not(any(windows, unix)))]
+    #[cfg(not(any(windows, unix, target_os = "wasi")))]
     fn from_entry_os(
         depth: usize,
         ent: &fs::DirEntry,
@@ -422,7 +443,7 @@ impl DirEntryRaw {
 
     // Placeholder implementation to allow compiling on non-standard platforms
     // (e.g. wasm32).
-    #[cfg(not(any(windows, unix)))]
+    #[cfg(not(any(windows, unix, target_os = "wasi")))]
     fn from_path(
         depth: usize,
         pb: PathBuf,
@@ -2090,9 +2111,12 @@ fn is_same_file_system(root_device: u64, path: &Path) -> Result<bool, Error> {
     Ok(root_device == dent_device)
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "wasi"))]
 fn device_num<P: AsRef<Path>>(path: P) -> io::Result<u64> {
+    #[cfg(unix)]
     use std::os::unix::fs::MetadataExt;
+    #[cfg(target_os = "wasi")]
+    use std::os::wasi::fs::MetadataExt;
 
     path.as_ref().metadata().map(|md| md.dev())
 }
@@ -2105,7 +2129,7 @@ fn device_num<P: AsRef<Path>>(path: P) -> io::Result<u64> {
     file::information(h).map(|info| info.volume_serial_number())
 }
 
-#[cfg(not(any(unix, windows)))]
+#[cfg(not(any(unix, windows, target_os = "wasi")))]
 fn device_num<P: AsRef<Path>>(_: P) -> io::Result<u64> {
     Err(io::Error::new(
         io::ErrorKind::Other,

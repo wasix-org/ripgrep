@@ -44,6 +44,7 @@ for result in WalkBuilder::new("./").hidden(false).build() {
 See the documentation for `WalkBuilder` for many other options.
 */
 
+#![cfg_attr(target_os = "wasi", feature(wasi_ext))]
 #![deny(missing_docs)]
 
 use std::path::{Path, PathBuf};

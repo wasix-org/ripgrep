@@ -20,3 +20,6 @@ ripgrep*_source.tar.bz2
 # Cargo timings
 cargo-timing-*.html
 cargo-timing.html
+
+# WASIX build outputs and downloaded dependencies
+/.wasix/

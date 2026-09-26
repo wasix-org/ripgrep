@@ -1,0 +1,64 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -65,6 +65,7 @@
+ 
+ */
+ 
++#![cfg_attr(target_os = "wasi", feature(wasi_ext))]
+ #![allow(bare_trait_objects, unknown_lints)]
+ #![deny(missing_docs)]
+ 
+@@ -75,16 +76,16 @@
+ use std::io;
+ use std::path::Path;
+ 
+-#[cfg(any(target_os = "redox", unix))]
++#[cfg(any(target_os = "redox", unix, target_os = "wasi"))]
+ use crate::unix as imp;
+-#[cfg(not(any(target_os = "redox", unix, windows)))]
++#[cfg(not(any(target_os = "redox", unix, windows, target_os = "wasi")))]
+ use unknown as imp;
+ #[cfg(windows)]
+ use win as imp;
+ 
+-#[cfg(any(target_os = "redox", unix))]
++#[cfg(any(target_os = "redox", unix, target_os = "wasi"))]
+ mod unix;
+-#[cfg(not(any(target_os = "redox", unix, windows)))]
++#[cfg(not(any(target_os = "redox", unix, windows, target_os = "wasi")))]
+ mod unknown;
+ #[cfg(windows)]
+ mod win;
+@@ -334,7 +335,7 @@
+     /// Return the underlying device number of this handle.
+     ///
+     /// Note that this only works on unix platforms.
+-    #[cfg(any(target_os = "redox", unix))]
++    #[cfg(any(target_os = "redox", unix, target_os = "wasi"))]
+     pub fn dev(&self) -> u64 {
+         self.0.dev()
+     }
+@@ -342,7 +343,7 @@
+     /// Return the underlying inode number of this handle.
+     ///
+     /// Note that this only works on unix platforms.
+-    #[cfg(any(target_os = "redox", unix))]
++    #[cfg(any(target_os = "redox", unix, target_os = "wasi"))]
+     pub fn ino(&self) -> u64 {
+         self.0.ino()
+     }
+--- a/src/unix.rs
++++ b/src/unix.rs
+@@ -1,8 +1,11 @@
+ use std::fs::{File, OpenOptions};
+ use std::hash::{Hash, Hasher};
+ use std::io;
++#[cfg(not(target_os = "wasi"))]
+ use std::os::unix::fs::MetadataExt;
+-use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
++#[cfg(target_os = "wasi")]
++use std::os::wasi::fs::MetadataExt;
++use std::os::fd::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
+ use std::path::Path;
+ 
+ #[derive(Debug)]

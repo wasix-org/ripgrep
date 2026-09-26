@@ -1,3 +1,5 @@
+> **WASIX port:** See [WASIX.md](WASIX.md) for reproducible builds, tests, port patches, and the `wasmer/ripgrep` package.
+
 ripgrep (rg)
 ------------
 ripgrep is a line-oriented search tool that recursively searches the current
