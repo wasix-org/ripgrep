@@ -36,17 +36,17 @@ jobs:
       - name: Rebuild from scratch and compare bytes
         run: |
           cp .wasix/dist/rg.wasm .wasix/first.wasm
-          cp .wasix/ripgrep-15.2.0.webc .wasix/first.webc
+          cp .wasix/ripgrep-15.2.1.webc .wasix/first.webc
           CARGO_TARGET_DIR=.wasix/repro-target bash wasix/build.sh
           cmp .wasix/first.wasm .wasix/dist/rg.wasm
-          cmp .wasix/first.webc .wasix/ripgrep-15.2.0.webc
-          sha256sum .wasix/dist/rg.wasm .wasix/ripgrep-15.2.0.webc > .wasix/SHA256SUMS
+          cmp .wasix/first.webc .wasix/ripgrep-15.2.1.webc
+          sha256sum .wasix/dist/rg.wasm .wasix/ripgrep-15.2.1.webc > .wasix/SHA256SUMS
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ripgrep-wasix-15.2.0
+          name: ripgrep-wasix-15.2.1
           include-hidden-files: true
           path: |
             .wasix/dist/rg.wasm
-            .wasix/ripgrep-15.2.0.webc
+            .wasix/ripgrep-15.2.1.webc
             .wasix/SHA256SUMS
             .wasix/provenance.json

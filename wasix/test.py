@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory(prefix='wasix-search-test-') as directory:
         return result.stdout
 
     if SPEC['binary'] == 'fd':
-        assert f"fd {SPEC['version']}" in run('--version')
+        assert f"fd {SPEC['upstream_version']}" in run('--version')
         common = ['--color=never', '--no-require-git']
         found = run(*common, '--glob', '--hidden', '*.txt', '/workspace')
         assert 'hello world.txt' in found and 'π.txt' in found and 'ignored.txt' not in found, found
@@ -42,7 +42,7 @@ with tempfile.TemporaryDirectory(prefix='wasix-search-test-') as directory:
         assert 'hello world.txt' in run(*common, '--one-file-system', 'hello', '/workspace')
         assert run(*common, '--glob', 'missing.*', '/workspace') == ''
     else:
-        assert f"ripgrep {SPEC['version']}" in run('--version')
+        assert f"ripgrep {SPEC['upstream_version']}" in run('--version')
         output = run('--json', '--no-require-git', 'needle', '/workspace')
         matches = [x['data'] for x in map(json.loads, output.splitlines()) if x['type'] == 'match']
         assert len(matches) == 1 and matches[0]['line_number'] == 2, matches
